@@ -6,6 +6,7 @@ namespace Ecommerce.BuisnessLogicLayer.ServiceContracts;
 
 public interface IProductService
 {
+  
     /// <summary>
     /// Retrives the list of products from the product repository
     /// </summary>
