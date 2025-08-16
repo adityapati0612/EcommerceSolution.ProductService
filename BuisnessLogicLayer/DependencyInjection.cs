@@ -1,4 +1,5 @@
 ﻿using Ecommerce.BuisnessLogicLayer.Mapper;
+using Ecommerce.BuisnessLogicLayer.RabbitMq;
 using Ecommerce.BuisnessLogicLayer.ServiceContracts;
 using Ecommerce.BuisnessLogicLayer.Services;
 using Ecommerce.BuisnessLogicLayer.Validators;
@@ -16,7 +17,10 @@ public static class DependencyInjection
    
         services.AddScoped<IProductService, ProductServices>(); // Ensure ProductService is a class, not a namespace
         services.AddValidatorsFromAssemblyContaining<ProductAddRequestValidators>();
-      //  services.AddValidatorsFromAssemblyContaining<ProductUpdateRequestValidator>();
+        //  services.AddValidatorsFromAssemblyContaining<ProductUpdateRequestValidator>();
+
+        services.AddTransient<IRabbitMQPublisher,RabbitMqPublisher>();
+
         return services;
     }
 }

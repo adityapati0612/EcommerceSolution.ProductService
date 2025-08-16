@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Ecommerce.BuisnessLogicLayer.DTO;
+using Ecommerce.BuisnessLogicLayer.RabbitMq;
 using Ecommerce.BuisnessLogicLayer.ServiceContracts;
 using Ecommerce.DataAccessLayer.Entities;
 using Ecommerce.DataAccessLayer.RepositoryContracts;
@@ -17,13 +18,16 @@ internal class ProductServices : IProductService
     private readonly IValidator<ProductUpdateRequest> productUpdateRequestValidator;
     private readonly IMapper mapper;
     private readonly IProductsRepository productsRepository;
+    private readonly IRabbitMQPublisher rabbitMQPublisher;
     public ProductServices(IValidator<ProductAddRequest> productAddRequestValidator, 
-        IValidator<ProductUpdateRequest> productUpdateRequestValidator, IMapper mapper,IProductsRepository productsRepository)
+        IValidator<ProductUpdateRequest> productUpdateRequestValidator, IMapper mapper,IProductsRepository productsRepository,
+        IRabbitMQPublisher rabbitMQPublisher)
     {
         this.productAddRequestValidator = productAddRequestValidator;
         this.productUpdateRequestValidator = productUpdateRequestValidator;
         this.mapper = mapper;
         this.productsRepository = productsRepository;
+        this.rabbitMQPublisher = rabbitMQPublisher;
     }
 
     public async Task<ProductResponse?> AddProduct(ProductAddRequest productAddRequest)
@@ -128,7 +132,18 @@ internal class ProductServices : IProductService
 
         //Attempt to add Product
         Product product = mapper.Map<Product>(productUpdateRequest);
+
+        //check if product name is changed
+        bool isProductNameChanged= productUpdateRequest.ProductName != existingProduct.ProductName;
+
         Product? updatedProduct = await productsRepository.UpdateProduct(product);
+
+        if (isProductNameChanged) 
+        {
+            string routingKey = "product.update.name";
+            var message = new ProductNameUpdateMessage (product.ProductId, product.ProductName);
+            rabbitMQPublisher.Publish<ProductNameUpdateMessage>(routingKey,message);
+        }
 
         ProductResponse updatedProductResponse = mapper.Map<ProductResponse>(updatedProduct);
         return updatedProductResponse;
